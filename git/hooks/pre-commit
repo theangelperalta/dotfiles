@@ -1,0 +1,64 @@
+#!/usr/bin/env zsh
+
+# Stop on failure
+set -e
+set -o pipefail
+
+REPO_ROOT=$(dirname $(dirname "$(git rev-parse --show-toplevel)"))
+BRANCH_ROOT=$(git rev-parse --show-toplevel)
+
+function log {
+  local now
+  now=$(gdate "+%Y-%m-%d %H:%M:%S.%3N")
+  echo "[$now] $*"
+}
+
+function get-swiftformat-version() {
+    btPath=$BRANCH_ROOT/BuildTools/Package.swift
+    # log "BuildTools path: $btPath"
+    lineMatch=$(cat $btPath | grep -oE '\.package\(url:\s*"https:\/\/github\.com\/nicklockwood\/SwiftFormat\.git",\s*\.exact\(Version\(([^)]*)\)\)\)')
+    # Get version from package and format version # in semnatic versioning: e.g., "0, 54, 0" -> "0.54.0"
+    verisonMatch=$(echo $lineMatch | grep -oE '\d+\, \d+\, \d+' | sed 's/, /./g')
+    # log "Match: $verisonMatch"
+    echo $verisonMatch
+}
+
+function get-expected-swiftformat-executable-name() {
+    echo "swiftformat-$(get-swiftformat-version)"
+}
+
+function build-binary() {
+    swift build -c release --package-path BuildTools --product swiftformat
+}
+
+function move-binary() {
+    exeName=$(get-expected-swiftformat-executable-name)
+    mv $BRANCH_ROOT/BuildTools/.build/arm64-apple-macosx/release/swiftformat $REPO_ROOT/tools/$exeName
+    chmod +x $REPO_ROOT/tools/$exeName
+    chmod 755 $REPO_ROOT/tools/$exeName
+}
+
+function exit_handler {
+    log "[CVSDK] Triggering auto linting"
+    $REPO_ROOT/tools/$exeName .
+}
+
+log "Running pre commit check"
+log "Repo root: $REPO_ROOT"
+exeName=$(get-expected-swiftformat-executable-name)
+log "Branch is using SwiftFormat $(get-swiftformat-version)"
+
+if [[ -x $REPO_ROOT/tools/$exeName ]]; then
+  log "Executable exists: $exeName"
+else
+  log "Executable not found: $exeName"
+  log "Building SwiftFormat..."
+  build-binary
+  # log "Moving SwiftFormat to cache location: $($REPO_ROOT/tools/$exeName)"
+  log "Moving SwiftFormat to cache location"
+  move-binary
+fi
+
+trap exit_handler ERR
+
+$REPO_ROOT/tools/$exeName --lint .
