@@ -5,7 +5,7 @@ export PATH="/Users/AngelCortez/Library/Android/sdk/tools/bin:${PATH}"
 export PATH="$HOME/.emacs.d/bin:${PATH}"
 export PATH="$(brew --prefix)/opt/findutils/libexec/gnubin:$PATH"
 export PATH="/usr/local/opt/grep/libexec/gnubin:$PATH"
-export JAVA_HOME=/Applications/Android\ Studio.app/Contents/jbr/Contents/Home
+# export JAVA_HOME=/Applications/Android\ Studio.app/Contents/jbr/Contents/Home
 export ANDROID_HOME="/Users/AngelCortez/Library/Android/sdk"
 
 export PATH="/usr/local/Cellar/gcc/7.2.0/bin:${PATH}"
@@ -122,3 +122,7 @@ export PATH="/usr/local/opt/node@16/bin:$PATH"
 
 test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh"
 
+
+[[ "$TERM_PROGRAM" == "CodeEditApp_Terminal" ]] && . "/Applications/CodeEdit.app/Contents/Resources/codeedit_shell_integration.zsh"
+export PATH="/usr/local/opt/openjdk@21/bin:$PATH"
+export PATH="/opt/homebrew/opt/ncurses/bin:$PATH"
