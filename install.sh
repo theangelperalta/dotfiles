@@ -11,7 +11,9 @@ function ln_s_r() {
    find $1 -type f -exec ln -s {} $2 \;
 }
 
-ln -s $PWD/lem/.lemrc $HOME/.lemrc
+# .lemrc loads lem/init/*.lisp relative to its truename, so symlinking
+# .lemrc alone is enough — the init/ files don't need their own links.
+ln -sf $PWD/lem/.lemrc $HOME/.lemrc
 ln -s $PWD/cl/.clrc.lisp $HOME/.clrc.lisp
 ln -s $PWD/sbcl/.sbclrc $HOME/.sbclrc
 ln -s $PWD/vim/.vimrc $HOME/.vimrc
