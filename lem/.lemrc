@@ -2,6 +2,14 @@
 
 (use-package :lem-user)
 
+;; Invoke the terminal command by name (the same way M-x does), so the
+;; reader doesn't need the lem-terminal package to exist at .lemrc load time.
+(lem:define-command my/terminal () ()
+  (let ((cmd (lem:find-command "terminal")))
+    (if cmd
+        (lem:call-command cmd nil)
+        (lem:message "terminal command not found — load lem-terminal first"))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Looks
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -13,6 +21,8 @@
 
 ;; (lem-webview:set-frame-color :light)
 ;; (lem:set-frame-color :light)
+;; Disable Tabbar
+(setf lem/tabbar:*enable-tabbar-on-startup* nil)
 
 (define-color-theme "xcode" ()
   (:display-background-mode :light)
@@ -58,7 +68,8 @@
   (:display-background-mode :dark)
   (:foreground "#bbc2cf")
   (:background "#282c34")
-  (:inactive-window-background "#21242b")
+  (:inactive-window-background nil)
+  ;; (:inactive-window-background "#21242b")
   ;; (cursor :foreground "#282c34" :background "#51afef")
   (cursor :background "#51afef")
   (region :foreground nil :background "#2257A0")
@@ -132,9 +143,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (setf *scroll-recenter-p* t)
-;; (setf (variable-value 'truncate-lines                :global) nil)
+;; (setf (variable-value 'truncate-lines :global) nil)
 (setf (variable-value 'lem/line-numbers:line-numbers :global) t)
 (setf lem:*auto-format* t)
+;; (setf (variable-value 'lem/tabbar:tabbar :global) nil)
 
 ;; Prompt-Window Location
 
@@ -182,22 +194,98 @@
 
 ;; VI
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Keybindings
+;; Keybindings (Doom Emacs-style transient menus)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; VI
 (define-key lem-vi-mode:*normal-keymap* "q"  'quit-active-window)
-(define-key lem-vi-mode:*normal-keymap* "Space f f" 'lem:find-file)
-(define-key lem-vi-mode:*normal-keymap* "Space b b" 'lem:select-buffer)
-(define-key lem-vi-mode:*normal-keymap* "Space w h" 'lem:window-move-left)
-(define-key lem-vi-mode:*normal-keymap* "Space w l" 'lem:window-move-right)
-(define-key lem-vi-mode:*normal-keymap* "Space w k" 'lem:window-move-up)
-(define-key lem-vi-mode:*normal-keymap* "Space w j" 'lem:window-move-down)
-(define-key lem-vi-mode:*normal-keymap* "Space w c" 'lem:delete-active-window)
-(define-key lem-vi-mode:*normal-keymap* "Space w s" 'lem:split-active-window-vertically)
-(define-key lem-vi-mode:*normal-keymap* "Space w v" 'lem:split-active-window-horizontally)
-(define-key lem-vi-mode:*normal-keymap* "Space e e" 'lem-lisp-mode:lisp-eval-last-expression)
-(define-key lem-vi-mode:*normal-keymap* "Space e f" 'lem-lisp-mode:lisp-load-file)
+
+;; SPC leader transient (Doom-style)
+(lem/transient:define-transient *leader-keymap*
+  :description "Leader"
+  :display-style :row
+
+  ;; Files
+  (:keymap
+   :display-style :column
+   :description "file"
+   (:key "f f" :suffix 'lem:find-file              :description "find file")
+   (:key "f r" :suffix 'lem:find-recent-file        :description "recent files")
+   (:key "f s" :suffix 'lem:save-current-buffer     :description "save file")
+   (:key "f S" :suffix 'lem:save-some-buffers       :description "save all")
+   (:key "f t" :suffix 'lem/filer:filer             :description "file tree"))
+
+  ;; Buffers
+  (:keymap
+   :display-style :column
+   :description "buffer"
+   (:key "b b" :suffix 'lem:select-buffer           :description "switch buffer")
+   (:key "b l" :suffix 'lem/list-buffers:list-buffers            :description "list buffers")
+   (:key "b k" :suffix 'lem:kill-buffer             :description "kill buffer")
+   (:key "b n" :suffix 'lem:next-buffer             :description "next buffer")
+   (:key "b p" :suffix 'lem:previous-buffer         :description "previous buffer"))
+
+  ;; Windows
+  (:keymap
+   :display-style :column
+   :description "window"
+   (:key "w h" :suffix 'lem:window-move-left        :description "move left")
+   (:key "w l" :suffix 'lem:window-move-right       :description "move right")
+   (:key "w k" :suffix 'lem:window-move-up          :description "move up")
+   (:key "w j" :suffix 'lem:window-move-down        :description "move down")
+   (:key "w s" :suffix 'lem:split-active-window-vertically   :description "split horizontal")
+   (:key "w v" :suffix 'lem:split-active-window-horizontally :description "split vertical")
+   (:key "w c" :suffix 'lem:delete-active-window    :description "close window")
+   (:key "w o" :suffix 'lem:delete-other-windows    :description "close others")
+   (:key "w w" :suffix 'lem:next-window             :description "other window"))
+
+  ;; Project
+  (:keymap
+   :display-style :column
+   :description "project"
+   (:key "p f" :suffix 'lem-core/commands/project:project-find-file       :description "find file in project")
+   (:key "p p" :suffix 'lem-core/commands/project:project-switch          :description "switch project")
+   (:key "p d" :suffix 'lem-core/commands/project:project-root-directory  :description "project directory")
+   (:key "p k" :suffix 'lem-core/commands/project:project-kill-buffers    :description "kill project buffers"))
+
+  ;; Search
+  (:keymap
+   :display-style :column
+   :description "search"
+   (:key "s g" :suffix 'lem/grep:grep               :description "grep")
+   (:key "s p" :suffix 'lem/grep:project-grep       :description "project grep"))
+
+  ;; Eval / Code
+  (:keymap
+   :display-style :column
+   :description "eval"
+   (:key "e e" :suffix 'lem-lisp-mode:lisp-eval-last-expression  :description "eval last expr")
+   (:key "e f" :suffix 'lem-lisp-mode:lisp-load-file             :description "load file"))
+
+  ;; Help
+  (:keymap
+   :display-style :column
+   :description "help"
+   (:key "h k" :suffix 'lem:describe-key            :description "describe key")
+   (:key "h b" :suffix 'lem:describe-bindings       :description "describe bindings")
+   (:key "h m" :suffix 'lem:describe-mode           :description "describe mode")
+   (:key "h a" :suffix 'lem:apropos-command          :description "apropos command"))
+
+  ;; Toggle
+  (:keymap
+   :display-style :column
+   :description "toggle"
+   (:key "t l" :suffix 'lem/line-numbers:toggle-line-numbers  :description "line numbers")
+   (:key "t t" :suffix 'lem:load-theme              :description "choose theme"))
+
+  ;; Open (Doom-style SPC o)
+  (:keymap
+   :display-style :column
+   :description "open"
+   (:key "o p" :suffix 'lem/filer:filer                        :description "project tree")
+   (:key "o t" :suffix 'my/terminal                             :description "terminal")))
+
+(define-key lem-vi-mode:*normal-keymap* "Space" *leader-keymap*)
 (define-key lem-vi-mode:*normal-keymap* "S /" 'lem/language-mode:comment-or-uncomment-region)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -306,7 +394,7 @@
 
 ;; (define-key lem-vi-mode:*normal-keymap* "S-/" 'lem/language-mode::comment-region)
 ;; (define-key lem-vi-mode:*normal-keymap* "S-/" 'comment-or-uncomment-region)
-(define-key lem:*global-keymap* "S-/" 'lem/language-mode::comment-or-uncomment-region)
+(define-key lem:*global-keymap* "S-/" 'lem/language-mode:comment-or-uncomment-region)
 ;; (define-key lem:*global-keymap* "S-/" 'test)
 ;; (define-key lem::*language-mode-keymap* "Super /" 'comment-or-uncomment-region)
 
