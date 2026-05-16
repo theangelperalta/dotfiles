@@ -14,13 +14,11 @@
 ;; Looks
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-#+lem-sdl2
-(set-font-size 12)
-#-lem-sdl2
 (set-font-size 12)
 
 ;; (lem-webview:set-frame-color :light)
 ;; (lem:set-frame-color :light)
+
 ;; Disable Tabbar
 (setf lem/tabbar:*enable-tabbar-on-startup* nil)
 
@@ -154,51 +152,13 @@
 (setf lem/prompt-window::*prompt-completion-window-gravity* :horizontally-above-window)
 (setf lem-lisp-mode/completion::*documentation-popup-gravity* :bottom-display)
 
-
-;; ## imenu
-
-;; A very poor man's imenu.
-;; (defun buffer-headings (txt)
-;;   (loop for line in (str:lines txt)
-;;         for parts = (str:split " " line)
-;;         for i = 1 then (incf i)
-;;         if (str:starts-with-p "(def" line)
-;;         ; collect (list line i))
-;;         collect line))
-
-;; (defun prompt-for-heading ()
-;;   (let ((candidates (buffer-headings (buffer-text (current-buffer)))))
-;;     (if candidates
-;;         (prompt-for-string "Heading: "
-;;                            :history-symbol '*imenu*
-;;                            :completion-function (lambda (x)
-;;                                                   (completion-strings x candidates))
-;;                            :test-function (lambda (name)
-;;                                             (member name candidates :test #'string=))))))
-
-;; (define-command imenu () ()
-;;   (let ((candidate (prompt-for-heading)))
-;;     (move-to-beginning-of-buffer)
-;;     (search-forward (current-point) candidate)
-;;     (message "~a" candidate)))
-
-;; (define-key lem-vi-mode:*normal-keymap* "Space x i" 'imenu)
-
 (setf lem/prompt-window::*fill-width* t)
 
-;; (setf lem/transient:*transient-always-show* t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Init Modes
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; VI
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Keybindings (Doom Emacs-style transient menus)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; VI
-(define-key lem-vi-mode:*normal-keymap* "q"  'quit-active-window)
+(define-key lem-vi-mode:*normal-keymap* "q" 'quit-active-window)
 
 ;; SPC leader transient (Doom-style)
 (lem/transient:define-transient *leader-keymap*
@@ -287,121 +247,9 @@
 
 (define-key lem-vi-mode:*normal-keymap* "Space" *leader-keymap*)
 (define-key lem-vi-mode:*normal-keymap* "S /" 'lem/language-mode:comment-or-uncomment-region)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Move this to repo
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; TODO: (line-start (copy-point (current-point) :temporary))
-;; To allow insertion at the beginning of the line
-;;;
-
-
-;; (defun my-move-to-beginning-of-line ()
-;;   (with-point ((start (copy-point (current-point))))
-;;     (progn
-;;     (line-start start)
-;;     (skip-whitespace-forward start t)
-;;     start)))
-
-;; (defun my-invoke-save-excursion (function)
-;;   (let ((point (copy-point (current-point) :right-inserting))
-;;         (mark (when (buffer-mark-p (current-buffer))
-;;                 (copy-point (buffer-mark (current-buffer))
-;;                             :right-inserting))))
-;;     (unwind-protect (funcall function)
-;;       (setf (current-buffer) (point-buffer point))
-;;       (move-point (current-point) point)
-;;       ;; (my-move-to-beginning-of-line)
-;;       (message "Current Point: ~A" (current-point))
-;;       (delete-point point)
-;;       (when mark
-;;         (set-current-mark mark)
-;;         (delete-point mark)))))
-
-;; (defmacro my-save-excursion (&body body)
-;;   "Saves the current `point` and `mark`, restores them after evaluation of `body` and returns the result of `body`."
-;;   `(my-invoke-save-excursion (lambda () ,@body)))
-
-;; (defun commented-region-p ()
-;;   (alexandria:when-let ((line-comment (or (variable-value 'lem/language-mode::insertion-line-comment :buffer)
-;;                                           (variable-value 'lem/language-mode::line-comment :buffer))))
-;;     (with-point ((start (my-move-to-beginning-of-line))
-;;                  (end (my-move-to-beginning-of-line)))
-;;       (set-region-point-using-global-mode (current-global-mode) start end)
-;;       (loop
-;;         (skip-whitespace-forward start)
-;;         (unless (lem/buffer/internal::looking-at start line-comment)
-;;           (return nil))
-;;         (when (lem::point>= start end)
-;;           (return t))
-;;         (unless (lem/buffer/internal::line-offset start 1)
-;;           (return t))))))
-
-;; (define-command (comment-region (:advice-classes editable-advice)) () ()
-;;   (my-save-excursion
-;;     (let ((line-comment (or (variable-value 'lem/language-mode::insertion-line-comment :buffer)
-;;                             (variable-value 'lem/language-mode::line-comment :buffer))))
-;;       (when line-comment
-;;         (with-point ((start (my-move-to-beginning-of-line) :right-inserting)
-;;                      (end (my-move-to-beginning-of-line) :left-inserting))
-;;           (set-region-point-using-global-mode (current-global-mode) start end)
-;;           (skip-whitespace-forward start)
-;;           (when (point>= start end)
-;;             (insert-string (my-move-to-beginning-of-line) line-comment)
-;;             (return-from comment-region))
-;;           (let ((charpos (point-charpos start)))
-;;             (loop
-;;               (when (same-line-p start end)
-;;                 (cond ((space*-p start))
-;;                       ((indentation-point-p end))
-;;                       (t
-;;                        (insert-string start line-comment)
-;;                        (unless (space*-p end)
-;;                          (insert-character end #\newline))))
-;;                 (return))
-;;               (unless (space*-p start)
-;;                 (insert-string start line-comment))
-;;               (line-offset start 1 charpos))))))))
-
-;; (define-command (uncomment-region (:advice-classes editable-advice))  () ()
-;;   (my-save-excursion
-;;     (let ((line-comment (or (variable-value 'lem/language-mode::insertion-line-comment :buffer)
-;;                             (variable-value 'lem/language-mode::line-comment :buffer))))
-;;       (when line-comment
-;;         (with-point ((start (my-move-to-beginning-of-line) :right-inserting)
-;;                      (end (my-move-to-beginning-of-line) :right-inserting))
-;;           (set-region-point-using-global-mode (current-global-mode) start end)
-;;           (let ((p start))
-;;             (loop
-;;               (parse-partial-sexp p end nil t)
-;;               (when (looking-at p line-comment)
-;;                 (let ((res (looking-at p line-comment)))
-;;                   (if res
-;;                       (delete-character p (length res))
-;;                       (loop :while (looking-at p line-comment)
-;;                             :do (delete-character p (length line-comment))))))
-;;               (when (point<= end p) (return))
-;;               (unless (line-offset p 1) (return)))))))))
-
-;; (define-command comment-or-uncomment-region () ()
-;;   (if (lem/language-mode::commented-region-p)
-;;       (lem/language-mode::uncomment-region)
-;;       (lem/language-mode::comment-region)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; (define-key lem-vi-mode:*normal-keymap* "S-/" 'lem/language-mode::comment-region)
-;; (define-key lem-vi-mode:*normal-keymap* "S-/" 'comment-or-uncomment-region)
 (define-key lem:*global-keymap* "S-/" 'lem/language-mode:comment-or-uncomment-region)
-;; (define-key lem:*global-keymap* "S-/" 'test)
-;; (define-key lem::*language-mode-keymap* "Super /" 'comment-or-uncomment-region)
-
-
 
 (lem-vi-mode:vi-mode)
 
-
-;; Start the Lisp REPL in vi insert mode. - Probably should create pull request for this
+;; Start the Lisp REPL in vi insert mode.
 (add-hook lem-lisp-mode:*lisp-repl-mode-hook* 'lem-vi-mode/commands:vi-insert)
