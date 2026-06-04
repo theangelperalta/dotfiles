@@ -68,6 +68,14 @@
    (:key "e e" :suffix 'lem-lisp-mode:lisp-eval-last-expression  :description "eval last expr")
    (:key "e f" :suffix 'lem-lisp-mode:lisp-load-file             :description "load file"))
 
+  ;; Code / Compile (Doom-style SPC c)
+  (:keymap
+   :display-style :column
+   :description "code"
+   (:key "c e" :suffix 'lem-lisp-mode:lisp-compile-defun          :description "compile defun")
+   (:key "c b" :suffix 'lem-lisp-mode:lisp-compile-and-load-file  :description "compile buffer")
+   (:key "c r" :suffix 'lem-lisp-mode:lisp-compile-region         :description "compile region"))
+
   ;; Help
   (:keymap
    :display-style :column
