@@ -91,6 +91,36 @@
    (:key "o p" :suffix 'lem/filer:filer                        :description "project tree")
    (:key "o t" :suffix 'my/terminal                             :description "terminal")))
 
+;; Unbind Space from motion-keymap so it does not shadow the leader prefix
+(define-key lem-vi-mode:*motion-keymap* "Space" nil)
 (define-key lem-vi-mode:*normal-keymap* "Space" *leader-keymap*)
 (define-key lem-vi-mode:*normal-keymap* "S /" 'lem/language-mode:comment-or-uncomment-region)
 (define-key lem:*global-keymap* "S-/" 'lem/language-mode:comment-or-uncomment-region)
+
+;; Vi-aware terminal-mode: normal state = editor commands, insert state = terminal input
+;; In normal state, leader menu and vi motions work. Press 'i' to send keys to terminal.
+;; Escape exits insert state back to normal (Doom-style).
+(defmethod execute ((mode lem-terminal/terminal-mode::terminal-mode) command argument)
+  (let ((state (lem-vi-mode/core:current-state)))
+    (cond
+      ;; Vi non-insert state (normal, visual, etc.): pass all commands through
+      ((and state (not (string= (lem-vi-mode/core::state-name state) "INSERT")))
+       (call-next-method))
+      ;; Allow Escape to exit insert mode even in terminal
+      ((and state (member (command-name command)
+                          '(lem-vi-mode/commands:vi-end-insert
+                            lem-vi-mode/commands:vi-keyboard-quit)))
+       (call-next-method))
+      ;; Original terminal-mode behavior for insert state
+      ((member command lem-terminal/terminal-mode::*bypass-commands* :test #'typep)
+       (call-next-method))
+      ((typep command 'scroll-up)
+       (alexandria:when-let ((terminal (lem-terminal/terminal-mode::get-current-terminal)))
+         (lem-terminal/terminal:activate-scrollback terminal))
+       (call-next-method))
+      ((typep command 'scroll-down)
+       (call-next-method))
+      (t
+       (alexandria:when-let ((terminal (lem-terminal/terminal-mode::get-current-terminal)))
+         (lem-terminal/terminal:deactivate-scrollback terminal))
+       (lem-terminal/terminal-mode::terminal-input)))))
