@@ -126,3 +126,4 @@ test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell
 [[ "$TERM_PROGRAM" == "CodeEditApp_Terminal" ]] && . "/Applications/CodeEdit.app/Contents/Resources/codeedit_shell_integration.zsh"
 export PATH="/usr/local/opt/openjdk@21/bin:$PATH"
 export PATH="/opt/homebrew/opt/ncurses/bin:$PATH"
+export PATH="$HOME/.local/bin:$PATH"
